@@ -1,0 +1,177 @@
+<html>
+<head>
+<title>Assignment1.ipynb</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #7a7e85;}
+.s1 { color: #bcbec4;}
+.s2 { color: #cf8e6d;}
+.s3 { color: #bcbec4;}
+.s4 { color: #6aab73;}
+.s5 { color: #2aacb8;}
+</style>
+</head>
+<body bgcolor="#1e1f22">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+Assignment1.ipynb</font>
+</center></td></tr></table>
+<pre><span class="s0">#%% md 
+</span><span class="s1">#### Load The data 
+</span><span class="s0">#%% 
+</span><span class="s2">import </span><span class="s1">pandas </span><span class="s2">as </span><span class="s1">pd</span>
+<span class="s1">df </span><span class="s3">= </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">read_csv</span><span class="s3">(</span><span class="s4">&quot;ObesityDataSet_raw_and_data_sinthetic.csv&quot;</span><span class="s3">)</span>
+<span class="s0">#%% 
+</span><span class="s2">from </span><span class="s1">uci_data </span><span class="s2">import </span><span class="s1">variables</span>
+<span class="s1">continuous_vars </span><span class="s3">= </span><span class="s1">variables</span><span class="s3">[(</span><span class="s1">variables</span><span class="s3">[</span><span class="s4">&quot;type&quot;</span><span class="s3">] == </span><span class="s4">&quot;Continuous&quot;</span><span class="s3">) |</span>
+                            <span class="s3">(</span><span class="s1">variables</span><span class="s3">[</span><span class="s4">&quot;type&quot;</span><span class="s3">] == </span><span class="s4">&quot;Integer&quot;</span><span class="s3">)][</span><span class="s4">&quot;name&quot;</span><span class="s3">]</span>
+
+<span class="s1">categorical_vars </span><span class="s3">= </span><span class="s1">variables</span><span class="s3">[(</span><span class="s1">variables</span><span class="s3">[</span><span class="s4">&quot;type&quot;</span><span class="s3">] == </span><span class="s4">&quot;Categorical&quot;</span><span class="s3">) |</span>
+                            <span class="s3">(</span><span class="s1">variables</span><span class="s3">[</span><span class="s4">&quot;type&quot;</span><span class="s3">] == </span><span class="s4">&quot;Binary&quot;</span><span class="s3">)][</span><span class="s4">&quot;name&quot;</span><span class="s3">]</span>
+
+<span class="s1">variables</span><span class="s3">[[</span><span class="s4">&quot;name&quot;</span><span class="s3">,</span><span class="s4">&quot;description&quot;</span><span class="s3">]]</span>
+
+<span class="s0">#%% md 
+</span><span class="s1">#### Variable Description cheat sheet 
+ 
+Gender: None 
+ 
+Age: None 
+ 
+Height: None 
+ 
+Weight: None 
+ 
+family_history_with_overweight: Has a family member suffered or suffers from overweight? 
+ 
+FAVC: Do you eat high caloric food frequently? 
+ 
+FCVC: Do you usually eat vegetables in your meals? 
+ 
+NCP: How many main meals do you have daily? 
+ 
+CAEC: Do you eat any food between meals? 
+ 
+SMOKE: Do you smoke? 
+ 
+CH2O: How much water do you drink daily? 
+ 
+SCC: Do you monitor the calories you eat daily? 
+ 
+FAF: How often do you have physical activity? 
+ 
+TUE: How much time do you use technological devices such as cell phone, videogames, television computer and others?&quot; 
+ 
+CALC: How often do you drink alcohol? 
+ 
+MTRANS: Which transportation do you usually use? 
+ 
+NObeyesdad: Obesity level 
+ 
+</span><span class="s0">#%% md 
+</span><span class="s1">#### Describe the continuous variables distribution 
+</span><span class="s0">#%% 
+</span><span class="s1">df</span><span class="s3">.</span><span class="s1">describe</span><span class="s3">()</span>
+<span class="s0">#%% md 
+</span><span class="s1">#### Count the frequency of categorical varaibles 
+</span><span class="s0">#%% 
+</span><span class="s1">cts </span><span class="s3">= </span><span class="s1">df</span><span class="s3">.</span><span class="s1">value_counts</span><span class="s3">()</span>
+<span class="s0">#%% 
+</span><span class="s2">from </span><span class="s1">pprint </span><span class="s2">import </span><span class="s1">pprint</span>
+
+<span class="s1">count_dict </span><span class="s3">= {}</span>
+<span class="s2">for </span><span class="s1">v </span><span class="s2">in </span><span class="s1">categorical_vars</span><span class="s3">:</span>
+    <span class="s1">count_dict</span><span class="s3">[</span><span class="s1">v</span><span class="s3">] = </span><span class="s1">df</span><span class="s3">[</span><span class="s1">v</span><span class="s3">].</span><span class="s1">value_counts</span><span class="s3">().</span><span class="s1">to_dict</span><span class="s3">() </span>
+
+<span class="s1">pprint</span><span class="s3">(</span><span class="s1">count_dict</span><span class="s3">)</span>
+<span class="s0">#%% 
+</span><span class="s2">import </span><span class="s1">seaborn </span><span class="s2">as </span><span class="s1">sns</span>
+<span class="s2">import </span><span class="s1">matplotlib</span><span class="s3">.</span><span class="s1">pyplot </span><span class="s2">as </span><span class="s1">plt</span>
+
+<span class="s0"># First plot: Continuous Data Correlations</span>
+<span class="s1">path </span><span class="s3">= </span><span class="s4">&quot;Plots/CorrelationX1.png&quot;</span>
+<span class="s1">main </span><span class="s3">= </span><span class="s4">&quot;Weight Gain Continuous Data Correlations&quot;</span>
+
+<span class="s0"># Create the pair plot</span>
+<span class="s1">sns</span><span class="s3">.</span><span class="s1">pairplot</span><span class="s3">(</span><span class="s1">df</span><span class="s3">[</span><span class="s1">continuous_vars</span><span class="s3">])</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">suptitle</span><span class="s3">(</span><span class="s1">main</span><span class="s3">)</span>
+<span class="s0"># plt.savefig(path)</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">show</span><span class="s3">()</span>
+<span class="s0">#%% 
+</span><span class="s2">import </span><span class="s1">seaborn </span><span class="s2">as </span><span class="s1">sns</span>
+<span class="s2">import </span><span class="s1">matplotlib</span><span class="s3">.</span><span class="s1">pyplot </span><span class="s2">as </span><span class="s1">plt</span>
+
+<span class="s0"># First plot: Continuous Data Correlations</span>
+<span class="s1">path </span><span class="s3">= </span><span class="s4">&quot;Plots/CorrelationX2.png&quot;</span>
+<span class="s1">main </span><span class="s3">= </span><span class="s4">&quot;Weight Gain Continuous Data Correlations&quot;</span>
+
+<span class="s0"># Create the pair plot</span>
+<span class="s1">sns</span><span class="s3">.</span><span class="s1">pairplot</span><span class="s3">(</span><span class="s1">df</span><span class="s3">, </span><span class="s1">hue </span><span class="s3">= </span><span class="s4">&quot;NObeyesdad&quot;</span><span class="s3">)</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">suptitle</span><span class="s3">(</span><span class="s1">main</span><span class="s3">)</span>
+<span class="s0"># plt.savefig(path)</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">show</span><span class="s3">()</span>
+<span class="s0">#%% 
+#TODO import using requests</span>
+<span class="s0">#TODO Correlation with categoricals</span>
+<span class="s0">#TODO interaction plots</span>
+<span class="s0">#TODO regression model</span>
+<span class="s0">#TODO regression summary</span>
+<span class="s0">#TODO regression anova</span>
+<span class="s0">#TODO regression residual skew</span>
+<span class="s0">#TODO regression residual kurt</span>
+<span class="s0">#TODO constant variance</span>
+
+<span class="s0">#%% 
+</span><span class="s2">import </span><span class="s1">statsmodels</span><span class="s3">.</span><span class="s1">api </span><span class="s2">as </span><span class="s1">sm</span>
+<span class="s2">from </span><span class="s1">scipy </span><span class="s2">import </span><span class="s1">stats</span>
+<span class="s2">from </span><span class="s1">statsmodels</span><span class="s3">.</span><span class="s1">formula</span><span class="s3">.</span><span class="s1">api </span><span class="s2">import </span><span class="s1">ols</span>
+<span class="s1">df </span><span class="s3">= </span><span class="s1">sm</span><span class="s3">.</span><span class="s1">add_constant</span><span class="s3">(</span><span class="s1">df</span><span class="s3">)</span>
+<span class="s1">m2 </span><span class="s3">= </span><span class="s1">ols</span><span class="s3">(</span><span class="s4">&quot;Weight~(Height)&quot;</span><span class="s3">,</span><span class="s1">data</span><span class="s3">=</span><span class="s1">df</span><span class="s3">).</span><span class="s1">fit</span><span class="s3">()</span>
+<span class="s1">m2</span><span class="s3">.</span><span class="s1">summary</span><span class="s3">()</span>
+<span class="s0">#%% 
+</span>
+<span class="s1">stats</span><span class="s3">.</span><span class="s1">skew</span><span class="s3">(</span><span class="s1">m2</span><span class="s3">.</span><span class="s1">resid</span><span class="s3">)</span>
+<span class="s1">stats</span><span class="s3">.</span><span class="s1">kurtosis</span><span class="s3">(</span><span class="s1">m2</span><span class="s3">.</span><span class="s1">resid</span><span class="s3">)</span>
+<span class="s1">sm</span><span class="s3">.</span><span class="s1">stats</span><span class="s3">.</span><span class="s1">anova_lm</span><span class="s3">(</span><span class="s1">m2</span><span class="s3">)</span>
+<span class="s0">#%% 
+</span><span class="s2">import </span><span class="s1">class_resources </span><span class="s2">as </span><span class="s1">cr</span>
+
+<span class="s1">cr</span><span class="s3">.</span><span class="s1">qq_plot</span><span class="s3">(</span><span class="s1">m1</span><span class="s3">)</span>
+<span class="s0">#%% 
+</span><span class="s2">import </span><span class="s1">matplotlib</span><span class="s3">.</span><span class="s1">pyplot </span><span class="s2">as </span><span class="s1">plt</span>
+
+<span class="s1">df_plot </span><span class="s3">= </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">DataFrame</span><span class="s3">({</span><span class="s4">&quot;Predictions&quot;</span><span class="s3">: </span><span class="s1">m2</span><span class="s3">.</span><span class="s1">fittedvalues</span><span class="s3">,</span>
+                        <span class="s4">&quot;Residuals&quot;</span><span class="s3">: </span><span class="s1">m2</span><span class="s3">.</span><span class="s1">resid</span><span class="s3">})</span>
+
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">figure</span><span class="s3">(</span><span class="s1">figsize</span><span class="s3">=(</span><span class="s5">10</span><span class="s3">,</span><span class="s5">6</span><span class="s3">))</span>
+<span class="s1">sns</span><span class="s3">.</span><span class="s1">scatterplot</span><span class="s3">(</span><span class="s1">data</span><span class="s3">=</span><span class="s1">df_plot</span><span class="s3">, </span><span class="s1">x</span><span class="s3">=</span><span class="s4">&quot;Predictions&quot;</span><span class="s3">, </span><span class="s1">y</span><span class="s3">=</span><span class="s4">&quot;Residuals&quot;</span><span class="s3">)</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">axhline</span><span class="s3">(</span><span class="s5">0</span><span class="s3">, </span><span class="s1">linestyle</span><span class="s3">=</span><span class="s4">'--'</span><span class="s3">, </span><span class="s1">color</span><span class="s3">=</span><span class="s4">'red'</span><span class="s3">)</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">title</span><span class="s3">(</span><span class="s4">'Assumptions: Residuals vs. Predicted'</span><span class="s3">, </span><span class="s1">fontsize</span><span class="s3">=</span><span class="s5">14</span><span class="s3">, </span><span class="s1">ha</span><span class="s3">=</span><span class="s4">'center'</span><span class="s3">)</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">xlabel</span><span class="s3">(</span><span class="s4">'Predictions'</span><span class="s3">)</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">ylabel</span><span class="s3">(</span><span class="s4">'Residuals'</span><span class="s3">)</span>
+
+<span class="s0"># Save the plot</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">savefig</span><span class="s3">(</span><span class="s4">'Plots/ResVsPred.png'</span><span class="s3">)</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">show</span><span class="s3">()</span>
+
+<span class="s0">#%% 
+</span><span class="s2">from </span><span class="s1">scipy</span><span class="s3">.</span><span class="s1">stats </span><span class="s2">import </span><span class="s1">levene</span>
+
+<span class="s1">stat</span><span class="s3">, </span><span class="s1">p </span><span class="s3">= </span><span class="s1">levene</span><span class="s3">(</span><span class="s1">df</span><span class="s3">[</span><span class="s4">' '</span><span class="s3">], </span><span class="s1">df</span><span class="s3">[</span><span class="s4">'cell'</span><span class="s3">])</span>
+<span class="s1">print</span><span class="s3">(</span><span class="s4">f&quot;Levene's test statistic: </span><span class="s2">{</span><span class="s1">stat</span><span class="s2">}</span><span class="s4">, p-value: </span><span class="s2">{</span><span class="s1">p</span><span class="s2">}</span><span class="s4">&quot;</span><span class="s3">)</span>
+
+<span class="s0"># Boxplot</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">figure</span><span class="s3">(</span><span class="s1">figsize</span><span class="s3">=(</span><span class="s5">10</span><span class="s3">, </span><span class="s5">6</span><span class="s3">))</span>
+<span class="s1">sns</span><span class="s3">.</span><span class="s1">boxplot</span><span class="s3">(</span><span class="s1">x</span><span class="s3">=</span><span class="s4">'cell'</span><span class="s3">, </span><span class="s1">y</span><span class="s3">=</span><span class="s4">'weight_gain'</span><span class="s3">, </span><span class="s1">data</span><span class="s3">=</span><span class="s1">df</span><span class="s3">)</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">title</span><span class="s3">(</span><span class="s4">'Weight Gain by Cell'</span><span class="s3">)</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">savefig</span><span class="s3">(</span><span class="s4">'Plots/HIVBP.png'</span><span class="s3">)</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">show</span><span class="s3">()</span>
+<span class="s0">#%% 
+</span><span class="s2">from </span><span class="s1">statsmodels</span><span class="s3">.</span><span class="s1">stats</span><span class="s3">.</span><span class="s1">diagnostic </span><span class="s2">import </span><span class="s1">acorr_ljungbox</span>
+
+<span class="s0"># Ljung-Box test</span>
+<span class="s1">ljung_box_result </span><span class="s3">= </span><span class="s1">acorr_ljungbox</span><span class="s3">(</span><span class="s1">m1</span><span class="s3">.</span><span class="s1">resid</span><span class="s3">, </span><span class="s1">lags</span><span class="s3">=[</span><span class="s5">1</span><span class="s3">], </span><span class="s1">return_df</span><span class="s3">=</span><span class="s2">True</span><span class="s3">)</span>
+<span class="s1">print</span><span class="s3">(</span><span class="s1">ljung_box_result</span><span class="s3">)</span></pre>
+</body>
+</html>
