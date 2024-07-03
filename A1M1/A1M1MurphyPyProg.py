@@ -8,7 +8,7 @@ def corrfunc(x, y, ax=None, **kws):
     """Plot the correlation coefficient in the top left hand corner of a plot."""
     r, _ = pearsonr(x, y)
     ax = ax or plt.gca()
-    ax.annotate(f'ρ = {r:.2f}', xy=(.1, .9), xycoords=ax.transAxes, color = "red", fontsize = 15)
+    ax.annotate(f'ρ = {r:.2f}', xy=(.1, .9), xycoords=ax .transAxes, color = "red", fontsize = 15)
 
 
 def qq_plot(lm,save_path, kind="Residuals"):
@@ -324,7 +324,7 @@ model_summary = m2.summary()
 print(model_summary)
 
 # Save the summary to a LaTeX file
-with open("A1M1/Tables/ModelSummaryAll.tex", "w") as f:
+with open("Tables/ModelSummaryAll.tex", "w") as f:
     f.write(model_summary.as_latex())
 
 #%%  Effect Size
