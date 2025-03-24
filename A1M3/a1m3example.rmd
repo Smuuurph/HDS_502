@@ -1,0 +1,291 @@
+---
+title: "HDS502 - Assignment 3"
+author: "Matthew Onimus"
+date: "15Jul2022"
+output:
+  html_document:
+    theme: "spacelab"
+    code_folding: show
+    toc: true
+    toc_float:
+      collapsed: false
+      smooth_scoll: false
+  pdf_document:
+    latex_engine: pdflatex
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Set Up and Data Read
+
+I will start by loading the in the packages to be used for the initial data analysis.  I will mainly be working in the `tidyverse` ecosystem.
+
+```{r set up, warning=FALSE, message=FALSE}
+library(tidyverse) # used for reading data, data cleaning, visualizations
+library(RNHANES) # a package used to pull in and analyze NHANES data, outdated
+library(nhanesA) # an updated package used to pull in and transform NHANES
+library(survey) # used for survey sample analysis
+library(tidymodels) # a group of packages used to build models
+library(glmnet) # used for lasso and ridge linear models
+library(rlang) # fancy data masking functions
+library(kableExtra) # used to create tables in the document
+
+sessionInfo()
+```
+
+## Assignment Example
+
+I needed to make quite a few changes in order to get most of this code to work.  The RNHANES package has not incorporated the breaking changes applied the survey package yet.
+
+```{r example}
+
+dat <- nhanes_load_data("EPHPP", "2013-2014")
+
+# Download the same data, but this time include demographics data (which includes sample weights)
+dat <- nhanes_load_data("EPHPP", "2013-2014", demographics = TRUE) 
+
+# Find the sample size for urinary triclosan
+nhanes_sample_size(dat,
+  column = "URXTRS",
+  comment_column = "URDTRSLC",
+  weights_column = "WTSB2YR")
+
+# Compute the detection frequency of urinary triclosan
+nhanes_detection_frequency(dat,
+  column = "URXTRS",
+  comment_column = "URDTRSLC",
+  weights_column = "WTSB2YR")
+
+# Compute 95th and 99th quantiles for urinary triclosan
+# nhanes_quantile(dat,
+#   column = "URXTRS",
+#   comment_column = "URDTRSLC",
+#   weights_column = "WTSB2YR",
+#   quantiles = c(0.95, 0.99))
+
+design <- svydesign(
+  id = ~SEQN,
+  weights = ~WTSB2YR,
+  data = dat
+)
+
+svyquantile(~URXTRS, design, c(0.95, 0.99))
+
+
+  
+# Compute geometric mean of urinary triclosan
+# this function is no longer in the package,
+# nhanes_geometric_mean(dat,
+#   column = "URXTRS",
+#   weights_column = "WTSB2YR")
+
+# Plot a histogram of triclosan distribution
+nhanes_hist(dat,
+  column = "URXTRS",
+  comment_column = "URDTRSLC",
+  weights_column = "WTSB2YR")
+
+
+```
+
+## Building a Linear Regression
+
+For the 3rd part of this assignment, I have selected a data set from the dietary survey, "Dietary Interview - Total Nurient Intakes, First Day".  I will also be building my linear regression using the tidymodel framework in addition to the example provided. 
+
+
+```{r readInDietData}
+
+dietTableName <- 'DR1TOT_J'
+
+dietData <- nhanes(dietTableName)
+dietVars <- nhanesTableVars("DIET", dietTableName, namesonly = TRUE)
+dietVarsFull <- nhanesTableVars("DIET", dietTableName)
+dietDataTrans <- suppressWarnings(nhanesTranslate(dietTableName, dietVars, data = dietData))
+
+demoTable <- "DEMO_J"
+
+demo <- nhanes(demoTable)
+demoVars <- nhanesTableVars("DEMO", demoTable, namesonly = TRUE)
+demoVarsFull <- nhanesTableVars("DEMO", demoTable)
+demoTrans <- suppressWarnings(nhanesTranslate(demoTable, demoVars, data = demo))
+
+dietJoin <- dietData %>% 
+  left_join(demo)
+```
+
+I will be attempting to model total water drank based on the set of demographic variables.  As you can see from the first histogram, the data is pretty skewed.  I am going to perform a log transformation on the data to provide a more normally distributed response variable.
+
+I also ended up needing to remove 2567 responses due to 0s or NAs in the water response columns.
+
+```{r cleanWater}
+totalWater <- dietJoin %>% 
+  mutate(totalWater = DR1_320Z + DR1_330Z + DR1BWATZ,
+         logTotalWater = log(totalWater)) %>% 
+  filter(!is.na(totalWater)) %>% 
+  filter(totalWater > 0)
+
+ggplot(totalWater, aes(x = totalWater)) +
+  geom_histogram() +
+  theme_classic() +
+  labs(
+    title = "Distrubtion of Total Water Consumption"
+  )
+
+ggplot(totalWater, aes(x = logTotalWater)) +
+  geom_histogram() +
+  theme_classic() +
+  labs(
+    title = "Distrubtion of Log Transformed Total Water Consumption"
+  )
+```
+
+Next, I will select a subset of demographic variables to use for my modeling.  I could probably use all of them but I am going to pick the one's I think will matter most.
+
+```{r pickVars}
+
+selectedData <- totalWater %>% 
+  select(logTotalWater, 
+         'totalInHousehold' = DMDHHSIZ,
+         'married' = DMDMARTL, 
+         'totalIncomeHousehold' = INDHHIN2,
+         'age' = RIDAGEYR,
+         'gender' = RIAGENDR,
+         'countryBorn' = DMDBORN4
+         )
+
+
+```
+
+First, we will build a model based on the example file.  I will be attempting to model total water drank based on a set of demographic variables.
+
+```{r}
+
+lmFit <- lm(logTotalWater ~ ., data = selectedData)
+
+summary(lmFit)
+
+```
+
+As we can see from the fit summary, only age and gender are significant factors when trying to predict the amount of water someone would consume (at least from the factors I selected).
+
+Now I will build a similar model using the tidymodels framework.  Using this framework will allow me to easily add lasso and ridge components in the next section.
+
+```{r tidylm}
+
+lmModel1 <- linear_reg() %>% 
+            set_engine('lm') %>% 
+            set_mode('regression')
+
+tidyLMFit <- lmModel1 %>% 
+  fit(logTotalWater ~ ., data = selectedData)
+
+tidyLMFit
+
+tidy(tidyLMFit$fit)
+
+glance(tidyLMFit)
+```
+
+As you can see from the r squared, we do not have a particularly great model.
+
+## Fit LM with Lasso and Ridge
+
+I will now use the tidymodel framework and the `glmnet` package to fit a similar model but using the lasso and ridge coefficients within the model.  I will only be building the model in the tidymodel framework as I believe this framework is more efficient, easier to tune, and analyze compared with the example provided.
+
+In the first code section, I will build a general glmnet model using a penalty of 0.1 and a mixture of 0.95.  The mixture of 0.95 corresponds to a mixture of lasso and ridge where lasso is 95% and ridge 5% of the 0.1 penalty.  
+
+In the second code section, I will hypertune the penalty and mixture using a variety of tidymodel functions.  Before performing the tuning, I will need to set up resampling to evaulate the estimates for each model.  In order to do the tuning, I will create 'grid' of penalties and mixtures, fit the data to each part of the grid and then determine the best combination for my model.  
+
+**NOTE**: The second section of code primarily comes from the Tidymodels website and the 'Tidy Modeling with R' textbook.  This is my standard workflow for starting to build models with data I am not familiar with.
+
+```{r glmnet}
+
+glmnetModel <- linear_reg(penalty = 0.1, mixture = 0.95) %>% 
+  set_engine('glmnet')
+
+glmnetFlow <- workflow() %>% 
+  add_model(glmnetModel) %>% 
+  add_formula(logTotalWater ~ .)
+
+fit1 <- fit(glmnetFlow, selectedData)
+
+fit1  
+
+
+```
+```{r glmnetTune}
+
+# first create the bootstrap samples
+
+set.seed(2)
+samples <- bootstraps(selectedData, 5)
+
+# create our grid first
+
+penValues <- 10^seq(-3,0, length.out = 10)
+grid <- crossing(penalty = penValues, mixture = c(0.1, 1.0))
+
+# we can then build a new model spec using the tune functions for the linear reg penalty and mixtures
+
+glmnetTuneModel <- linear_reg(penalty = tune(), mixture = tune()) %>% 
+  set_engine('glmnet', path_values = penValues)
+
+# just need to update the previous workflow with the new model
+glmnetTuneFlow <- glmnetFlow %>% 
+  update_model(glmnetTuneModel)
+
+glmnetCoefs <- function(x) {
+  x %>% extract_fit_engine() %>% 
+    tidy(return_zeros = TRUE) %>% 
+    rename(penalty = lambda)
+}
+
+controlGrid <- control_grid(extract = glmnetCoefs)
+
+glmnetTune <- glmnetTuneFlow %>% 
+  tune_grid(
+    resamples = samples,
+    grid = grid,
+    control = controlGrid
+  )
+
+glmnetTune
+
+glmnetCoefs <- 
+  glmnetTune %>% 
+  select(id, .extracts) %>% 
+  unnest(.extracts) %>% 
+  select(id, mixture, .extracts) %>% 
+  group_by(id, mixture) %>%          
+  slice(1) %>%                       
+  ungroup() %>%                      
+  unnest(.extracts)
+
+glmnetCoefs %>% 
+  filter(term != "(Intercept)") %>% 
+  mutate(mixture = format(mixture)) %>% 
+  ggplot(aes(x = penalty, y = estimate, col = mixture, groups = id)) + 
+  geom_hline(yintercept = 0, lty = 3) +
+  geom_line(alpha = 0.5, lwd = 1.2) + 
+  facet_wrap(~ term) + 
+  scale_x_log10() +
+  scale_color_brewer(palette = "Accent") +
+  labs(y = "coefficient") +
+  theme_classic() +
+  theme(legend.position = "top")
+
+```
+
+
+The next thing about using the tidymodels framework is that it fits right into the rest of the tidyverse framework.  We are quickly able to build visualizations and determine the impact of variables based on the tuning the matrix.
+
+One thing to note, the coefficients are all pretty low for the variables I selected, once again indicating these may not be the best variables to build the total water intake model on.
+
+There are a couple of conclusions we can draw the plots:
+
+- The `married` and `totalIncomeHousehold` are immediately selected out and have no impact on the model.  This is similar for the `countryBorn` variable which is either selected out or goes to 0 eventually.
+- The `age` predictor remains in most models regardless of mixture or penalty.
+- `gender` is interesting as it starts out negative and stays mostly negative until the penalty becomes pretty high.
+- The `totalInHousehold` is the only variable that remains part of the model when the mixture is set to 0.1.

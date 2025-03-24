@@ -1,3 +1,10 @@
+"""
+Author: Sean Murphy
+Usage: This code is available for open use especially for educational purposes at
+Thomas Jefferson College of Population Health
+
+"""
+
 #%% Define Utility Functions
 
 from scipy.stats import pearsonr
